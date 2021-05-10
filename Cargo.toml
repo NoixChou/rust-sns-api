@@ -1,8 +1,18 @@
 [package]
 name = "rust-sns"
+authors = ["NoixChou <shuto.tanaka.kos@gmail.com>"]
 version = "0.1.0"
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+actix-web = "3.3"
+actix-rt = "2.2.0"
+env_logger = "0.8.3"
+chrono = "0.4.19"
+diesel = { version = "1.4", features = [ "mysql", "r2d2", "chrono" ] }
+r2d2 = "0.8.9"
+dotenv = "0.15.0"
+uuid = { version = "0.8", features = ["serde", "v4"] }
+maplit = "1.0.2"

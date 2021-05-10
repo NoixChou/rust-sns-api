@@ -1,0 +1,1 @@
+ALTER TABLE items DROP FOREIGN KEY author_id_foreign;

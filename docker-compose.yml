@@ -1,0 +1,38 @@
+version: '3.1'
+
+services:
+  api:
+    container_name: sns_api
+    build:
+      context: .
+      dockerfile: Dockerfile
+    working_dir: /api
+    command: /bin/sh -c "cargo watch --poll -x 'run --release'"
+    volumes:
+      - .:/api
+      - api-cargo:/usr/local/cargo/registry
+      - api-target:/api/target
+    ports:
+      - 8080:80
+    depends_on:
+      - db
+
+  db:
+    container_name: sns_db
+    image: mysql:5.7
+    environment:
+      MYSQL_ROOT_PASSWORD: 2C%Em%7^2L
+      MYSQL_DATABASE: database
+      MYSQL_USER: docker
+      MYSQL_PASSWORD: 2C%Em%7^2L
+      TZ: 'Asia/Tokyo'
+    command: mysqld --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - ./docker/db/data:/var/lib/mysql
+      - ./docker/db/my.cnf:/etc/mysql/conf.d/my.cnf
+    ports:
+      - 3316:3306
+
+volumes:
+  api-cargo:
+  api-target:
