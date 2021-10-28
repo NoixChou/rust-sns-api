@@ -3,8 +3,8 @@ table! {
         id -> Char,
         message -> Varchar,
         author_id -> Char,
-        created_at -> Nullable<Timestamp>,
-        updated_at -> Nullable<Timestamp>,
+        created_at -> Timestamp,
+        updated_at -> Timestamp,
         published_at -> Nullable<Timestamp>,
         deleted_at -> Nullable<Timestamp>,
     }
@@ -15,12 +15,12 @@ table! {
         id -> Char,
         id_name -> Varchar,
         display_name -> Varchar,
-        description -> Nullable<Varchar>,
+        description -> Varchar,
         birthday -> Nullable<Date>,
-        website -> Nullable<Varchar>,
-        is_private -> Nullable<Bool>,
-        created_at -> Nullable<Timestamp>,
-        updated_at -> Nullable<Timestamp>,
+        website -> Varchar,
+        is_private -> Bool,
+        created_at -> Timestamp,
+        updated_at -> Timestamp,
         deleted_at -> Nullable<Timestamp>,
     }
 }

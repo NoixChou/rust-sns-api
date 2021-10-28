@@ -15,5 +15,4 @@ COPY ./.env /api
 
 ENV CARGO_BUILD_TARGET_DIR=/api/target
 
-RUN cargo build
 EXPOSE 80

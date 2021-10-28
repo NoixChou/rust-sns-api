@@ -1,1 +1,1 @@
-ALTER TABLE items DROP FOREIGN KEY author_id_foreign;
+ALTER TABLE posts DROP FOREIGN KEY posts_ibfk_1;
