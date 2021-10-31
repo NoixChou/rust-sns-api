@@ -7,6 +7,7 @@ mod controllers;
 mod models;
 mod routes;
 
+use actix_cors::Cors;
 use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
 use actix_web::middleware::Logger;
 use diesel::r2d2;
@@ -26,6 +27,10 @@ async fn main() -> std::io::Result<()> {
 
         App::new()
             .wrap(Logger::default())
+            .wrap(
+                Cors::default()
+                    .allowed_origin(std::env::var("FRONTEND_URL").expect("invalid FRONTEND_URL").as_str())
+            )
             .data(
                 r2d2::Pool::builder()
                     .build(r2d2::ConnectionManager::<diesel::MysqlConnection>::new(database_url))
