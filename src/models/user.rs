@@ -115,6 +115,7 @@ impl User {
     pub fn fetch_by_id(user_id: String, db: &diesel::MysqlConnection) -> QueryResult<User> {
         use crate::schema::users::{dsl, dsl::*};
         dsl::users
+            .filter(deleted_at.is_null())
             .filter(id.eq(user_id))
             .first::<User>(db)
     }

@@ -71,7 +71,8 @@ impl UserCredential {
     pub fn fetch_by_id(user_id: String, db: &MysqlConnection) -> QueryResult<Self> {
         use crate::schema::user_credentials::{dsl, dsl::*};
         dsl::user_credentials
-            .filter(id.eq(id))
+            .filter(deleted_at.is_null())
+            .filter(id.eq(user_id))
             .first::<Self>(db)
     }
 }
