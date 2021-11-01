@@ -1,6 +1,6 @@
 #[macro_use] extern crate diesel;
 #[macro_use] extern crate serde_derive;
-#[macro_use] extern crate strum;
+extern crate strum;
 
 mod schema;
 mod controllers;
@@ -8,7 +8,7 @@ mod models;
 mod routes;
 
 use actix_cors::Cors;
-use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
+use actix_web::{web, App, HttpResponse, HttpServer};
 use actix_web::middleware::Logger;
 use diesel::r2d2;
 use dotenv::dotenv;
@@ -18,7 +18,7 @@ pub type DBConPool = r2d2::Pool<r2d2::ConnectionManager<diesel::MysqlConnection>
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    std::env::set_var("RUST_LOG", "info");
+    std::env::set_var("RUST_LOG", "debug");
     dotenv().ok();
     env_logger::init();
 

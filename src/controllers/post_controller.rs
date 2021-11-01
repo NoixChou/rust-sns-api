@@ -1,5 +1,4 @@
-use crate::models::post;
-use actix_web::{HttpRequest, HttpResponse, Responder};
+use actix_web::Responder;
 
 pub async fn index() -> impl Responder {
     "index"

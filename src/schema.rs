@@ -26,6 +26,17 @@ table! {
 }
 
 table! {
+    user_credentials (id) {
+        id -> Char,
+        password_hash -> Varchar,
+        email -> Varchar,
+        created_at -> Timestamp,
+        updated_at -> Timestamp,
+        deleted_at -> Nullable<Timestamp>,
+    }
+}
+
+table! {
     user_images (id) {
         id -> Char,
         user_id -> Nullable<Char>,
@@ -38,9 +49,11 @@ table! {
 }
 
 joinable!(posts -> users (author_id));
+joinable!(users -> user_credentials (id));
 
 allow_tables_to_appear_in_same_query!(
     posts,
     users,
+    user_credentials,
     user_images,
 );
