@@ -9,12 +9,12 @@ pub mod post_controller;
 
 fn invalid_uuid_response() -> HttpResponse {
     HttpResponse::BadRequest().json(
-        hashmap! { "error" => error::Error::new(error::ErrorCode::InvalidRequest, "Invalid uuid.") }
+        hashmap! { "error" => error::ApiError::new(error::ApiErrorCode::InvalidRequest, "Invalid uuid.") }
     )
 }
 
 fn parse_error_response() -> HttpResponse {
     HttpResponse::BadRequest().json(
-        hashmap! { "error" => error::Error::new(error::ErrorCode::InvalidRequest, "Failed to parse request.") }
+        hashmap! { "error" => error::ApiError::new(error::ApiErrorCode::InvalidRequest, "Failed to parse request.") }
     )
 }

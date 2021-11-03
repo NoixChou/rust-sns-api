@@ -1,4 +1,3 @@
-use actix_web::web;
 use diesel::prelude::*;
 use serde::Serialize;
 use validator::{Validate, ValidationError, ValidationErrors};
@@ -7,7 +6,7 @@ use crate::DBConPool;
 use crate::schema::users;
 
 #[derive(Deserialize, Validate)]
-pub struct NewUser {
+pub struct InputUser {
     #[validate(length(max = 20))]
     pub id_name: String,
     #[validate(length(max = 100))]
@@ -53,7 +52,7 @@ pub struct InsertableUser {
 }
 
 impl InsertableUser {
-    pub fn new(new_user: NewUser) -> Result<Self, ValidationErrors> {
+    pub fn new(new_user: InputUser) -> Result<Self, ValidationErrors> {
         new_user.validate()?;
         
         Ok(Self {
@@ -94,14 +93,14 @@ impl User {
         self
     }
     
-    pub fn insert(user: NewUser, db: &web::Data<DBConPool>) -> Result<Option<String>, ValidationErrors> {
+    pub fn insert(user: InputUser, db: &DBConPool) -> Result<Option<String>, ValidationErrors> {
         use crate::schema::users::dsl;
         
         let insertable_user = InsertableUser::new(user)?;
         
         let modified_rows_count = diesel::insert_into(dsl::users)
             .values(&insertable_user)
-            .execute(&db.get().expect("Failed to establish DB connection"));
+            .execute(&crate::get_db_connection(db));
         
         match modified_rows_count {
             Ok(count) => {
@@ -112,12 +111,13 @@ impl User {
         }
     }
     
-    pub fn fetch_by_id(user_id: String, db: &diesel::MysqlConnection) -> QueryResult<User> {
-        use crate::schema::users::{dsl, dsl::*};
+    pub fn fetch_by_id(user_id: String, db: &DBConPool) -> QueryResult<User> {
+        use crate::schema::users::dsl;
+        
         dsl::users
-            .filter(deleted_at.is_null())
-            .filter(id.eq(user_id))
-            .first::<User>(db)
+            .filter(dsl::deleted_at.is_null())
+            .filter(dsl::id.eq(user_id))
+            .first::<User>(&crate::get_db_connection(db))
     }
 }
 

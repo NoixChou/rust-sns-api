@@ -1,6 +1,5 @@
-use actix_web::web;
-use argon2::{Algorithm, Argon2, Params, password_hash::rand_core::OsRng, PasswordHasher, Version};
-use argon2::password_hash::SaltString;
+use argon2::{Algorithm, Argon2, Params, PasswordHash, PasswordHasher, PasswordVerifier, Version};
+use argon2::password_hash::{rand_core::OsRng, SaltString};
 use diesel::prelude::*;
 use validator::{Validate, ValidationErrors};
 
@@ -8,11 +7,12 @@ use crate::DBConPool;
 use crate::schema::user_credentials;
 
 #[derive(Deserialize, Validate)]
-pub struct NewUserCredential {
+pub struct InputUserCredential {
     #[validate(length(min = 8))]
-    raw_password: String,
+    #[serde(rename = "password")]
+    pub raw_password: String,
     #[validate(email)]
-    email: String,
+    pub email: String,
 }
 
 #[derive(Insertable)]
@@ -24,7 +24,7 @@ pub struct InsertableUserCredential {
 }
 
 impl InsertableUserCredential {
-    pub fn new(new_credential: NewUserCredential) -> Result<Self, ValidationErrors> {
+    pub fn new(new_credential: InputUserCredential) -> Result<Self, ValidationErrors> {
         new_credential.validate()?;
         
         Ok(Self {
@@ -37,27 +37,27 @@ impl InsertableUserCredential {
 
 #[derive(Serialize, Queryable)]
 pub struct UserCredential {
-    id: String,
+    pub id: String,
     #[serde(skip)]
-    password: String,
-    email: String,
+    pub password_hash: String,
+    pub email: String,
     #[serde(serialize_with = "crate::models::serialize_naive_dt")]
-    created_at: chrono::NaiveDateTime,
+    pub created_at: chrono::NaiveDateTime,
     #[serde(serialize_with = "crate::models::serialize_naive_dt")]
-    updated_at: chrono::NaiveDateTime,
+    pub updated_at: chrono::NaiveDateTime,
     #[serde(skip)]
-    deleted_at: Option<chrono::NaiveDateTime>,
+    pub deleted_at: Option<chrono::NaiveDateTime>,
 }
 
 impl UserCredential {
-    pub fn insert(user: NewUserCredential, db: &web::Data<DBConPool>) -> Result<Option<String>, ValidationErrors> {
+    pub fn insert(user: InputUserCredential, db: &DBConPool) -> Result<Option<String>, ValidationErrors> {
         use crate::schema::user_credentials::dsl;
         
         let insertable_credential = InsertableUserCredential::new(user)?;
         
         let modified_rows_count = diesel::insert_into(dsl::user_credentials)
             .values(&insertable_credential)
-            .execute(&db.get().expect("Failed to establish DB connection"));
+            .execute(&crate::get_db_connection(db));
         
         match modified_rows_count {
             Ok(count) => {
@@ -68,23 +68,51 @@ impl UserCredential {
         }
     }
     
-    pub fn fetch_by_id(user_id: String, db: &MysqlConnection) -> QueryResult<Self> {
-        use crate::schema::user_credentials::{dsl, dsl::*};
+    pub fn fetch_by_id(user_id: &String, db: &DBConPool) -> QueryResult<Self> {
+        use crate::schema::user_credentials::dsl;
+        
         dsl::user_credentials
-            .filter(deleted_at.is_null())
-            .filter(id.eq(user_id))
-            .first::<Self>(db)
+            .filter(dsl::deleted_at.is_null())
+            .filter(dsl::id.eq(user_id))
+            .first::<Self>(&crate::get_db_connection(db))
+    }
+    
+    pub fn fetch_by_email(email: &String, db: &DBConPool) -> QueryResult<Self> {
+        use crate::schema::user_credentials::dsl;
+        
+        dsl::user_credentials
+            .filter(dsl::deleted_at.is_null())
+            .filter(dsl::email.eq(email))
+            .first::<Self>(&crate::get_db_connection(db))
+    }
+    
+    pub fn verify_with_input(input_credential: &InputUserCredential, db: &DBConPool) -> Result<Self, ()> {
+        let stored_credential = Self::fetch_by_email(&input_credential.email, db)
+            .map(|c| {
+                build_argon2().verify_password(
+                    input_credential.raw_password.as_bytes(),
+                    &PasswordHash::new(&c.password_hash)?,
+                ).map(|_| c)
+            });
+        
+        match stored_credential {
+            Ok(Ok(c)) => Ok(c),
+            _ => Err(())
+        }
     }
 }
 
-fn hash_password(password: &String) -> String {
+fn build_argon2() -> Argon2<'static> {
     Argon2::new(
         Algorithm::Argon2id,
         Version::V0x13,
         Params::new(37888, 1, 1, None).expect("Failed to initialize argon2"),
     )
-        .hash_password(
-            password.as_bytes(),
-            &SaltString::generate(&mut OsRng),
-        ).expect("Failed to argon2 hashing").to_string()
+}
+
+fn hash_password(password: &String) -> String {
+    build_argon2().hash_password(
+        password.as_bytes(),
+        &SaltString::generate(&mut OsRng),
+    ).expect("Failed to argon2 hashing").to_string()
 }

@@ -48,7 +48,19 @@ table! {
     }
 }
 
+table! {
+    user_tokens (token) {
+        token -> Char,
+        user_id -> Char,
+        expired_at -> Datetime,
+        created_at -> Timestamp,
+        updated_at -> Timestamp,
+        deleted_at -> Nullable<Timestamp>,
+    }
+}
+
 joinable!(posts -> users (author_id));
+joinable!(user_tokens -> user_credentials (user_id));
 joinable!(users -> user_credentials (id));
 
 allow_tables_to_appear_in_same_query!(
@@ -56,4 +68,5 @@ allow_tables_to_appear_in_same_query!(
     users,
     user_credentials,
     user_images,
+    user_tokens,
 );

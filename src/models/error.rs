@@ -1,28 +1,30 @@
 #[derive(Serialize, Deserialize)]
-pub enum ErrorCode {
-    #[serde(rename = "invalid_request")] InvalidRequest,
-    #[serde(rename = "not_found")] NotFound,
-    #[serde(rename = "not_allowed")] NotAllowed,
-    #[serde(rename = "auth_failed")] Auth,
-    #[serde(rename = "server_error")] Server,
+#[serde(rename_all = "snake_case")]
+pub enum ApiErrorCode {
+    InvalidRequest,
+    NotFound,
+    NotAllowed,
+    AuthFailed,
+    InvalidToken,
+    ServerError,
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct Error {
-    pub code: ErrorCode,
-    pub message: String
+pub struct ApiError {
+    pub code: ApiErrorCode,
+    pub message: String,
 }
 
-impl Error {
-    pub fn new(code: ErrorCode, message: &str) -> Self {
+impl ApiError {
+    pub fn new(code: ApiErrorCode, message: &str) -> Self {
         Self {
             code,
-            message: message.to_string()
+            message: message.to_string(),
         }
     }
-
-    pub fn new_with_detail<T: serde::Serialize>(code: ErrorCode, message: &str, detail: T) -> ErrorWithDetail<T> {
-        ErrorWithDetail::<T> {
+    
+    pub fn new_with_detail<T: serde::Serialize>(code: ApiErrorCode, message: &str, detail: T) -> ApiErrorWithDetail<T> {
+        ApiErrorWithDetail::<T> {
             code,
             message: message.to_string(),
             detail,
@@ -31,12 +33,12 @@ impl Error {
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct ErrorWithDetail<T>
-where
-    T: serde::Serialize
+pub struct ApiErrorWithDetail<T>
+    where
+        T: serde::Serialize
 {
-    pub code: ErrorCode,
+    pub code: ApiErrorCode,
     pub message: String,
-    pub detail: T
+    pub detail: T,
 }
 

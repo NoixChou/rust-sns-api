@@ -1,5 +1,6 @@
-use crate::controllers::{user_controller, post_controller};
 use actix_web::web;
+
+use crate::controllers::{auth_controller, post_controller, user_controller};
 
 pub fn users(cfg: &mut web::ServiceConfig) {
     cfg
@@ -15,4 +16,10 @@ pub fn posts(cfg: &mut web::ServiceConfig) {
         .route("/posts", web::post().to(post_controller::create))
         .route("/posts/{id}", web::delete().to(post_controller::delete))
         .route("/posts/user/{user_id}", web::get().to(post_controller::user_index));
+}
+
+pub fn auth(cfg: &mut web::ServiceConfig) {
+    cfg
+        .route("/auth/login", web::post().to(auth_controller::login))
+        .route("/auth/register", web::post().to(auth_controller::register));
 }
