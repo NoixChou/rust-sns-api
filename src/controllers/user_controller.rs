@@ -50,6 +50,6 @@ pub async fn delete(web::Path(id): web::Path<uuid::Uuid>) -> impl Responder {
     format!("profile delete {}", id.to_string())
 }
 
-pub async fn show_my() -> impl Responder {
+pub async fn show_me() -> impl Responder {
     "profile my"
 }
