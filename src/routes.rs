@@ -29,14 +29,14 @@ pub fn posts(cfg: &mut web::ServiceConfig) {
     cfg
         .service(web::scope("/posts")
             .service(web::resource("")
+                .wrap(TokenAuthentication::unnecessary())
                 .route(web::get().to(post_controller::index))
                 .route(web::post().to(post_controller::create))
-                .wrap(TokenAuthentication::unnecessary())
             )
             .service(web::resource("/{id}")
+                .wrap(TokenAuthentication::required())
                 .route(web::get().to(post_controller::show))
                 .route(web::delete().to(post_controller::delete))
-                .wrap(TokenAuthentication::required())
             )
         );
 }
@@ -46,5 +46,9 @@ pub fn auth(cfg: &mut web::ServiceConfig) {
         .service(web::scope("/auth")
             .route("/login", web::post().to(auth_controller::login))
             .route("/register", web::post().to(auth_controller::register))
+            .service(web::resource("/me")
+                .wrap(TokenAuthentication::required())
+                .route(web::get().to(auth_controller::show_me))
+            )
         );
 }

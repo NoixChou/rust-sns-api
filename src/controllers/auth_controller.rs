@@ -6,6 +6,7 @@ use crate::DBConPool;
 use crate::models::error::*;
 use crate::models::user_credential::*;
 use crate::models::user_token::*;
+use crate::services::token_authentication::AuthorizedUser;
 
 pub async fn login(credential: Option<web::Json<InputUserCredential>>, db: web::Data<DBConPool>) -> impl Responder {
     let credential = match credential {
@@ -48,6 +49,14 @@ pub async fn register(new_credential: Option<web::Json<InputUserCredential>>, db
         Err(e) => e,
         _ => HttpResponse::InternalServerError().finish()
     }
+}
+
+pub async fn show_me(authorized_user: web::ReqData<AuthorizedUser>) -> impl Responder {
+    HttpResponse::Ok().json(
+        hashmap! {
+            "credential" => authorized_user.credential.clone()
+        }
+    )
 }
 
 fn issue_user_token(user_id: &String, db: &DBConPool) -> String {
