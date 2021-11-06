@@ -44,11 +44,7 @@ pub async fn register(new_credential: Option<web::Json<InputUserCredential>>, db
     );
     
     match result {
-        Ok(Some(id)) => HttpResponse::Created().json(
-            hashmap! {
-                "token" => issue_user_token(&id, &db)
-            }
-        ),
+        Ok(Some(_)) => HttpResponse::Created().finish(),
         Err(e) => e,
         _ => HttpResponse::InternalServerError().finish()
     }

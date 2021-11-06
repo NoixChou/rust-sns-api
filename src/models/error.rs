@@ -1,3 +1,7 @@
+use actix_web::http::header;
+use actix_web::HttpResponse;
+use maplit::hashmap;
+
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum ApiErrorCode {
@@ -29,6 +33,19 @@ impl ApiError {
             message: message.to_string(),
             detail,
         }
+    }
+    
+    pub fn error_response(&self) -> HttpResponse {
+        match self.code {
+            ApiErrorCode::InvalidRequest => HttpResponse::BadRequest(),
+            ApiErrorCode::NotFound => HttpResponse::NotFound(),
+            ApiErrorCode::NotAllowed => HttpResponse::MethodNotAllowed(),
+            ApiErrorCode::AuthFailed => HttpResponse::Unauthorized().header(header::WWW_AUTHENTICATE, "Bearer").take(),
+            ApiErrorCode::InvalidToken => HttpResponse::Unauthorized().header(header::WWW_AUTHENTICATE, "Bearer error=\"invalid_token\"").take(),
+            ApiErrorCode::ServerError => HttpResponse::InternalServerError(),
+        }.json(
+            hashmap! { "error" => self }
+        )
     }
 }
 

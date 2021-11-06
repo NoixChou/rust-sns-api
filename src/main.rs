@@ -16,6 +16,7 @@ mod schema;
 mod controllers;
 mod models;
 mod routes;
+mod services;
 
 pub type DBConnection = diesel::MysqlConnection;
 pub type DBConPool = r2d2::Pool<r2d2::ConnectionManager<DBConnection>>;
@@ -43,14 +44,15 @@ async fn main() -> std::io::Result<()> {
                     .build(r2d2::ConnectionManager::<diesel::MysqlConnection>::new(database_url))
                     .expect("Failed to establish DB connection")
             )
-            .configure(routes::users)
-            .configure(routes::posts)
-            .configure(routes::auth)
+            .service(web::scope("/api")
+                .configure(routes::users)
+                .configure(routes::posts)
+                .configure(routes::auth)
+            )
             .default_service(
-                web::route()
-                    .to(|| HttpResponse::NotFound().json(
-                        hashmap! { "error" => models::error::ApiError::new(models::error::ApiErrorCode::InvalidRequest, "No endpoint found.") }
-                    ))
+                web::route().to(|| HttpResponse::NotFound().json(
+                    hashmap! { "error" => models::error::ApiError::new(models::error::ApiErrorCode::InvalidRequest, "No endpoint found.") }
+                ))
             )
     })
         .bind("0.0.0.0:80")?

@@ -7,9 +7,9 @@ use crate::schema::users;
 
 #[derive(Deserialize, Validate)]
 pub struct InputUser {
-    #[validate(length(max = 20))]
+    #[validate(length(min = 3, max = 20))]
     pub id_name: String,
-    #[validate(length(max = 100))]
+    #[validate(length(min = 1, max = 100))]
     pub display_name: String,
     #[validate(length(max = 300))]
     pub description: String,
@@ -52,11 +52,11 @@ pub struct InsertableUser {
 }
 
 impl InsertableUser {
-    pub fn new(new_user: InputUser) -> Result<Self, ValidationErrors> {
+    pub fn new(new_user: InputUser, user_id: String) -> Result<Self, ValidationErrors> {
         new_user.validate()?;
         
         Ok(Self {
-            id: uuid::Uuid::new_v4().to_string(),
+            id: user_id,
             id_name: new_user.id_name,
             display_name: new_user.display_name,
             description: new_user.description,
@@ -67,7 +67,10 @@ impl InsertableUser {
     }
 }
 
-#[derive(Serialize, Deserialize, Queryable)]
+#[derive(Serialize)]
+pub struct FilteredUser(User);
+
+#[derive(Serialize, Deserialize, Queryable, Clone)]
 pub struct User {
     pub id: String,
     pub id_name: String,
@@ -85,18 +88,19 @@ pub struct User {
 }
 
 impl User {
-    pub fn filter_for_response(&mut self) -> &Self {
-        if !self.is_private { return self; }
-        
-        self.birthday = None;
-        
-        self
+    pub fn filter_for_response(&self) -> FilteredUser {
+        let mut user = self.clone();
+        if !user.is_private { return FilteredUser(user); }
+    
+        user.birthday = None;
+    
+        FilteredUser(user)
     }
     
-    pub fn insert(user: InputUser, db: &DBConPool) -> Result<Option<String>, ValidationErrors> {
+    pub fn insert(user: InputUser, user_id: String, db: &DBConPool) -> Result<Option<String>, ValidationErrors> {
         use crate::schema::users::dsl;
         
-        let insertable_user = InsertableUser::new(user)?;
+        let insertable_user = InsertableUser::new(user, user_id)?;
         
         let modified_rows_count = diesel::insert_into(dsl::users)
             .values(&insertable_user)

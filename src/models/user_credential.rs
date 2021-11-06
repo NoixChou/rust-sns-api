@@ -35,7 +35,7 @@ impl InsertableUserCredential {
     }
 }
 
-#[derive(Serialize, Queryable)]
+#[derive(Serialize, Queryable, Clone)]
 pub struct UserCredential {
     pub id: String,
     #[serde(skip)]
