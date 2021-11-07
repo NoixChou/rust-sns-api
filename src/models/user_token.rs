@@ -46,6 +46,15 @@ pub struct UserToken {
     pub deleted_at: Option<chrono::NaiveDateTime>,
 }
 
+macro_rules! filter_for_get_by_token {
+    ($token:expr, $query:expr) => {
+        $query
+            .filter(dsl::expired_at.gt(chrono::Local::now().naive_local()))
+            .filter(dsl::deleted_at.is_null())
+            .filter(dsl::token.eq($token))
+    }
+}
+
 impl UserToken {
     pub fn issue(user_id: &String, db: &DBConPool) -> Option<String> {
         use crate::schema::user_tokens::dsl;
@@ -66,13 +75,19 @@ impl UserToken {
         }
     }
     
+    pub fn revoke(token: &String, db: &DBConPool) -> Result<(), ApiError> {
+        use crate::schema::user_tokens::dsl;
+        
+        filter_for_get_by_token!(token, diesel::delete(dsl::user_tokens))
+            .execute(&crate::get_db_connection(db))
+            .map(|_| ())
+            .map_err(|_| ApiError::new(ApiErrorCode::NotFound, "Token not found."))
+    }
+    
     pub fn verify_token(token: &String, db: &DBConPool) -> Result<Self, ApiError> {
         use crate::schema::user_tokens::dsl;
         
-        let token: QueryResult<Self> = dsl::user_tokens
-            .filter(dsl::expired_at.gt(chrono::Local::now().naive_local()))
-            .filter(dsl::deleted_at.is_null())
-            .filter(dsl::token.eq(token))
+        let token: QueryResult<Self> = filter_for_get_by_token!(token, dsl::user_tokens)
             .first::<Self>(&crate::get_db_connection(db));
         
         token

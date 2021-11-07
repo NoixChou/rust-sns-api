@@ -16,7 +16,7 @@ pub async fn show(user_id: Option<web::Path<uuid::Uuid>>, db: web::Data<DBConPoo
     let user = User::fetch_by_id(user_id.to_string(), &db);
     
     match user {
-        Ok(mut user) => HttpResponse::Ok().json(
+        Ok(user) => HttpResponse::Ok().json(
             hashmap! { "user" => user.filter_for_response() }
         ),
         Err(diesel::NotFound) => HttpResponse::NotFound().json(
@@ -58,10 +58,6 @@ pub async fn create(new_user: Option<web::Json<InputUser>>, authorized_user: Opt
         Err(e) => e,
         _ => HttpResponse::InternalServerError().finish()
     }
-}
-
-pub async fn delete(web::Path(id): web::Path<uuid::Uuid>) -> impl Responder {
-    format!("profile delete {}", id.to_string())
 }
 
 pub async fn show_me(authorized_user: web::ReqData<AuthorizedUser>) -> impl Responder {

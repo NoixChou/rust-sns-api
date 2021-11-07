@@ -95,8 +95,9 @@ impl<S, B> Service for TokenAuthenticationMiddleware<S>
 
 #[derive(Clone)]
 pub struct AuthorizedUser {
+    pub token: String,
     pub credential: UserCredential,
-    pub user: Option<User>
+    pub user: Option<User>,
 }
 
 fn validate_token(request: &ServiceRequest, database: &&Data<DBConPool>, t: String) -> Result<(), ApiError> {
@@ -104,8 +105,9 @@ fn validate_token(request: &ServiceRequest, database: &&Data<DBConPool>, t: Stri
         .map(|t| {
             request.extensions_mut().insert(
                 AuthorizedUser {
+                    token: t.token,
                     credential: UserCredential::fetch_by_id(&t.user_id, &database).expect("Token was authenticated but failed to fetch UserCredential"),
-                    user: User::fetch_by_id(t.user_id, &database).ok()
+                    user: User::fetch_by_id(t.user_id, &database).ok(),
                 }
             );
         })

@@ -59,6 +59,14 @@ pub async fn show_me(authorized_user: web::ReqData<AuthorizedUser>) -> impl Resp
     )
 }
 
+pub async fn logout(authorized_user: web::ReqData<AuthorizedUser>, db: web::Data<DBConPool>) -> impl Responder {
+    UserToken::revoke(&authorized_user.token, &db)
+        .map(|_| HttpResponse::NoContent().finish())
+        .map_err(
+            |e| e.error_response()
+        )
+}
+
 fn issue_user_token(user_id: &String, db: &DBConPool) -> String {
     UserToken::issue(user_id, &db).expect("Failed to issue token")
 }
