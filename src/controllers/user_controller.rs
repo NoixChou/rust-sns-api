@@ -13,7 +13,7 @@ pub async fn show(user_id: Option<web::Path<uuid::Uuid>>, db: web::Data<DBConPoo
         Some(u) => u
     };
     
-    let user = User::fetch_by_id(user_id.to_string(), &db);
+    let user = User::fetch_by_id(&user_id.to_string(), &db);
     
     match user {
         Ok(user) => HttpResponse::Ok().json(
@@ -30,7 +30,7 @@ pub async fn create(new_user: Option<web::Json<InputUser>>, authorized_user: Opt
     let authorized_user = match authorized_user {
         None => return ApiError::new(ApiErrorCode::AuthFailed, "Authorization required.").error_response(),
         Some(u) => {
-            if let Some(_) = u.user {
+            if is_created_user(&u) {
                 return ApiError::new(ApiErrorCode::InvalidRequest, "User already created.").error_response();
             };
             u
@@ -50,22 +50,46 @@ pub async fn create(new_user: Option<web::Json<InputUser>>, authorized_user: Opt
     
     match result {
         Ok(Some(id)) => {
-            let created_user = User::fetch_by_id(id, &db).unwrap_or_else(|_| panic!("Failed to create User {}", authorized_user.credential.id));
+            let created_user = User::fetch_by_id(&id, &db).unwrap_or_else(|_| panic!("Failed to create User {}", authorized_user.credential.id));
             HttpResponse::Ok().json(
                 hashmap! { "user" => created_user.filter_for_response()
             })
-        },
+        }
         Err(e) => e,
         _ => HttpResponse::InternalServerError().finish()
     }
 }
 
-pub async fn show_me(authorized_user: web::ReqData<AuthorizedUser>) -> impl Responder {
-    authorized_user.user.as_ref()
-        .ok_or(ApiError::new(ApiErrorCode::NotFound, "Create user first.").error_response())
-        .map(|u| {
+pub async fn update_me(new_user: Option<web::Json<InputPatchUser>>, authorized_user: web::ReqData<AuthorizedUser>, db: web::Data<DBConPool>) -> impl Responder {
+    if !is_created_user(&authorized_user) {
+        return ApiError::new(ApiErrorCode::NotFound, "Create user first.").error_response();
+    }
+    
+    let new_user = match new_user {
+        None => return parse_error_response(),
+        Some(u) => u
+    };
+    
+    match User::update(new_user.0, &authorized_user.credential.id, &db) {
+        Ok(u) => {
             HttpResponse::Ok().json(
                 hashmap! { "user" => u.filter_for_response() }
             )
-        })
+        }
+        Err(e) => e.error_response()
+    }
+}
+
+pub async fn show_me(authorized_user: web::ReqData<AuthorizedUser>) -> impl Responder {
+    authorized_user.user.as_ref()
+                   .ok_or(ApiError::new(ApiErrorCode::NotFound, "Create user first.").error_response())
+                   .map(|u| {
+                       HttpResponse::Ok().json(
+                           hashmap! { "user" => u.filter_for_response() }
+                       )
+                   })
+}
+
+fn is_created_user(authorized_user: &AuthorizedUser) -> bool {
+    authorized_user.user.is_some()
 }

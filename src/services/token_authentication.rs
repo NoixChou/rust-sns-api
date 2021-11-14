@@ -100,14 +100,14 @@ pub struct AuthorizedUser {
     pub user: Option<User>,
 }
 
-fn validate_token(request: &ServiceRequest, database: &&Data<DBConPool>, t: String) -> Result<(), ApiError> {
+fn validate_token(request: &ServiceRequest, database: &Data<DBConPool>, t: String) -> Result<(), ApiError> {
     UserToken::verify_token(&t, &database)
         .map(|t| {
             request.extensions_mut().insert(
                 AuthorizedUser {
                     token: t.token,
                     credential: UserCredential::fetch_by_id(&t.user_id, &database).expect("Token was authenticated but failed to fetch UserCredential"),
-                    user: User::fetch_by_id(t.user_id, &database).ok(),
+                    user: User::fetch_by_id(&t.user_id, &database).ok(),
                 }
             );
         })

@@ -9,6 +9,7 @@ pub fn users(cfg: &mut web::ServiceConfig) {
             .service(web::resource("/me")
                 .wrap(TokenAuthentication::required())
                 .route(web::get().to(user_controller::show_me))
+                .route(web::patch().to(user_controller::update_me))
             )
             .service(web::resource("/{id}")
                 .wrap(TokenAuthentication::unnecessary())

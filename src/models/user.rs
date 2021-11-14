@@ -3,6 +3,7 @@ use serde::Serialize;
 use validator::{Validate, ValidationError, ValidationErrors};
 
 use crate::DBConPool;
+use crate::models::error::{ApiError, ApiErrorCode};
 use crate::schema::users;
 
 #[derive(Deserialize, Validate)]
@@ -13,6 +14,20 @@ pub struct InputUser {
     pub display_name: String,
     #[validate(length(max = 300))]
     pub description: String,
+    #[validate(custom = "validate_birthday")]
+    pub birthday: Option<chrono::NaiveDate>,
+    #[validate(custom = "validate_website", length(max = 100))]
+    pub website: String,
+    pub is_private: bool,
+}
+
+#[derive(AsChangeset, Deserialize, Validate)]
+#[table_name = "users"]
+pub struct InputPatchUser {
+    #[validate(length(min = 1, max = 100))]
+    pub display_name: Option<String>,
+    #[validate(length(max = 300))]
+    pub description: Option<String>,
     #[validate(custom = "validate_birthday")]
     pub birthday: Option<chrono::NaiveDate>,
     #[validate(custom = "validate_website", length(max = 100))]
@@ -105,7 +120,7 @@ impl User {
         let modified_rows_count = diesel::insert_into(dsl::users)
             .values(&insertable_user)
             .execute(&crate::get_db_connection(db));
-        
+    
         match modified_rows_count {
             Ok(count) => {
                 if count < 1 { return Ok(None); }
@@ -115,7 +130,27 @@ impl User {
         }
     }
     
-    pub fn fetch_by_id(user_id: String, db: &DBConPool) -> QueryResult<User> {
+    pub fn update(user: InputPatchUser, user_id: &String, db: &DBConPool) -> Result<User, ApiError> {
+        use crate::schema::users::dsl;
+        
+        if let Err(_) = user.validate() {
+            return Err(ApiError::new(ApiErrorCode::InvalidRequest, "Invalid parameter."));
+        }
+        
+        diesel::update(dsl::users
+            .filter(dsl::deleted_at.is_null())
+            .filter(dsl::id.eq(user_id))
+        )
+            .set(&user)
+            .execute(&crate::get_db_connection(db))
+            .map(|_| {
+                Self::fetch_by_id(user_id, db)
+                    .unwrap_or_else(|e| panic!("User updated but failed to fetch ({}): {}", user_id, e))
+            })
+            .map_err(|e| ApiError::new(ApiErrorCode::NotFound, "User does not exist."))
+    }
+    
+    pub fn fetch_by_id(user_id: &String, db: &DBConPool) -> QueryResult<User> {
         use crate::schema::users::dsl;
         
         dsl::users
@@ -124,5 +159,4 @@ impl User {
             .first::<User>(&crate::get_db_connection(db))
     }
 }
-
 
