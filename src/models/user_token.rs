@@ -2,6 +2,7 @@ use diesel::prelude::*;
 
 use crate::DBConPool;
 use crate::models::error::{ApiError, ApiErrorCode};
+use crate::models::get_now_date_time;
 use crate::schema::user_tokens;
 
 struct NewUserToken {
@@ -20,7 +21,7 @@ pub struct InsertableUserToken {
 
 impl InsertableUserToken {
     fn new(new_token: &NewUserToken) -> Self {
-        let now_datetime = chrono::Local::now();
+        let now_datetime = get_now_date_time();
         
         Self {
             token: uuid::Uuid::new_v4().to_string(),
@@ -49,7 +50,7 @@ pub struct UserToken {
 macro_rules! filter_for_get_by_token {
     ($token:expr, $query:expr) => {
         $query
-            .filter(dsl::expired_at.gt(chrono::Local::now().naive_local()))
+            .filter(dsl::expired_at.gt(crate::models::get_now_naive_date_time()))
             .filter(dsl::deleted_at.is_null())
             .filter(dsl::token.eq($token))
     }

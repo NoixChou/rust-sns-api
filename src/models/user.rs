@@ -4,6 +4,7 @@ use validator::{Validate, ValidationError, ValidationErrors};
 
 use crate::DBConPool;
 use crate::models::error::{ApiError, ApiErrorCode};
+use crate::models::get_now_naive_date_time;
 use crate::schema::users;
 
 #[derive(Deserialize, Validate)]
@@ -36,7 +37,7 @@ pub struct InputPatchUser {
 }
 
 fn validate_birthday(birthday: &chrono::NaiveDate) -> Result<(), ValidationError> {
-    if *birthday > chrono::Local::now().date().naive_local() {
+    if *birthday > get_now_naive_date_time().date() {
         return Err(ValidationError::new("future_birthday"));
     }
     
@@ -85,7 +86,13 @@ impl InsertableUser {
 #[derive(Serialize)]
 pub struct FilteredUser(User);
 
-#[derive(Serialize, Deserialize, Queryable, Clone)]
+#[derive(Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum UserTagged {
+    User(FilteredUser)
+}
+
+#[derive(Serialize, Deserialize, Identifiable, Queryable, Clone)]
 pub struct User {
     pub id: String,
     pub id_name: String,
@@ -103,12 +110,16 @@ pub struct User {
 }
 
 impl User {
+    pub fn wrap_tagged(self) -> UserTagged {
+        UserTagged::User(self.filter_for_response())
+    }
+    
     pub fn filter_for_response(&self) -> FilteredUser {
         let mut user = self.clone();
         if !user.is_private { return FilteredUser(user); }
-    
+        
         user.birthday = None;
-    
+        
         FilteredUser(user)
     }
     
@@ -136,7 +147,7 @@ impl User {
         if let Err(_) = user.validate() {
             return Err(ApiError::new(ApiErrorCode::InvalidRequest, "Invalid parameter."));
         }
-        
+    
         diesel::update(dsl::users
             .filter(dsl::deleted_at.is_null())
             .filter(dsl::id.eq(user_id))
@@ -147,7 +158,7 @@ impl User {
                 Self::fetch_by_id(user_id, db)
                     .unwrap_or_else(|e| panic!("User updated but failed to fetch ({}): {}", user_id, e))
             })
-            .map_err(|e| ApiError::new(ApiErrorCode::NotFound, "User does not exist."))
+            .map_err(|_| ApiError::new(ApiErrorCode::NotFound, "User does not exist."))
     }
     
     pub fn fetch_by_id(user_id: &String, db: &DBConPool) -> QueryResult<User> {

@@ -1,7 +1,7 @@
 table! {
     posts (id) {
         id -> Char,
-        message -> Varchar,
+        content -> Varchar,
         author_id -> Char,
         created_at -> Timestamp,
         updated_at -> Timestamp,
@@ -52,7 +52,7 @@ table! {
     user_tokens (token) {
         token -> Char,
         user_id -> Char,
-        expired_at -> Datetime,
+        expired_at -> Timestamp,
         created_at -> Timestamp,
         updated_at -> Timestamp,
         deleted_at -> Nullable<Timestamp>,

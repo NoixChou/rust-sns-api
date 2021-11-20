@@ -1,7 +1,7 @@
 use actix_web::{HttpResponse, Responder, web};
 use maplit::hashmap;
 
-use crate::controllers::{invalid_uuid_response, parse_error_response};
+use crate::controllers::{invalid_uuid_response, is_created_user, parse_error_response};
 use crate::DBConPool;
 use crate::models::error::*;
 use crate::models::user::*;
@@ -88,8 +88,4 @@ pub async fn show_me(authorized_user: web::ReqData<AuthorizedUser>) -> impl Resp
                            hashmap! { "user" => u.filter_for_response() }
                        )
                    })
-}
-
-fn is_created_user(authorized_user: &AuthorizedUser) -> bool {
-    authorized_user.user.is_some()
 }
