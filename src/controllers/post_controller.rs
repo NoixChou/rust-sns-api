@@ -52,8 +52,13 @@ pub async fn create(new_post: Option<web::Json<InputPost>>, authorized_user: web
     
     match result {
         Ok(Some(id)) => {
-            let created_post = Post::fetch_by_id(&id, &db).unwrap_or_else(|_| panic!("Failed to create Post {}", id));
-            HttpResponse::Ok().json(created_post.wrap_tagged())
+            HttpResponse::Created().json(
+                hashmap! {
+                    "post" => hashmap! {
+                        "id" => id
+                    }
+                }
+            )
         }
         Err(e) => e,
         _ => HttpResponse::InternalServerError().finish()

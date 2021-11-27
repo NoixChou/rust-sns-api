@@ -50,10 +50,13 @@ pub async fn create(new_user: Option<web::Json<InputUser>>, authorized_user: Opt
     
     match result {
         Ok(Some(id)) => {
-            let created_user = User::fetch_by_id(&id, &db).unwrap_or_else(|_| panic!("Failed to create User {}", authorized_user.credential.id));
-            HttpResponse::Ok().json(
-                hashmap! { "user" => created_user.filter_for_response()
-            })
+            HttpResponse::Created().json(
+                hashmap! {
+                    "user" => hashmap! {
+                        "id" => id
+                    }
+                }
+            )
         }
         Err(e) => e,
         _ => HttpResponse::InternalServerError().finish()
