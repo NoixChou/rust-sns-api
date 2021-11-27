@@ -52,7 +52,7 @@ pub async fn create(new_post: Option<web::Json<InputPost>>, authorized_user: web
     
     match result {
         Ok(Some(id)) => {
-            let created_post = Post::fetch_by_id(&id, &db).unwrap_or_else(|_| panic!("Failed to create Post"));
+            let created_post = Post::fetch_by_id(&id, &db).unwrap_or_else(|_| panic!("Failed to create Post {}", id));
             HttpResponse::Ok().json(created_post.wrap_tagged())
         }
         Err(e) => e,

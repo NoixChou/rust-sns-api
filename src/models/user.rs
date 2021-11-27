@@ -1,4 +1,5 @@
 use diesel::prelude::*;
+use log::error;
 use serde::Serialize;
 use validator::{Validate, ValidationError, ValidationErrors};
 
@@ -125,20 +126,14 @@ impl User {
     
     pub fn insert(user: InputUser, user_id: String, db: &DBConPool) -> Result<Option<String>, ValidationErrors> {
         use crate::schema::users::dsl;
-        
+    
         let insertable_user = InsertableUser::new(user, user_id)?;
-        
+    
         let modified_rows_count = diesel::insert_into(dsl::users)
             .values(&insertable_user)
             .execute(&crate::get_db_connection(db));
     
-        match modified_rows_count {
-            Ok(count) => {
-                if count < 1 { return Ok(None); }
-                Ok(Some(insertable_user.id))
-            }
-            _ => Ok(None)
-        }
+        response_item_insertion_result!(modified_rows_count, insertable_user.id)
     }
     
     pub fn update(user: InputPatchUser, user_id: &String, db: &DBConPool) -> Result<User, ApiError> {

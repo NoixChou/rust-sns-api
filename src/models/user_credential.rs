@@ -1,6 +1,8 @@
 use argon2::{Algorithm, Argon2, Params, PasswordHash, PasswordHasher, PasswordVerifier, Version};
 use argon2::password_hash::{rand_core::OsRng, SaltString};
 use diesel::prelude::*;
+use log::error;
+use rand::Rng;
 use validator::{Validate, ValidationErrors};
 
 use crate::DBConPool;
@@ -52,20 +54,14 @@ pub struct UserCredential {
 impl UserCredential {
     pub fn insert(user: InputUserCredential, db: &DBConPool) -> Result<Option<String>, ValidationErrors> {
         use crate::schema::user_credentials::dsl;
-        
+    
         let insertable_credential = InsertableUserCredential::new(user)?;
-        
+    
         let modified_rows_count = diesel::insert_into(dsl::user_credentials)
             .values(&insertable_credential)
             .execute(&crate::get_db_connection(db));
-        
-        match modified_rows_count {
-            Ok(count) => {
-                if count < 1 { return Ok(None); }
-                Ok(Some(insertable_credential.id))
-            }
-            _ => Ok(None)
-        }
+    
+        response_item_insertion_result!(modified_rows_count, insertable_credential.id)
     }
     
     pub fn fetch_by_id(user_id: &String, db: &DBConPool) -> QueryResult<Self> {
@@ -97,7 +93,11 @@ impl UserCredential {
         
         match stored_credential {
             Ok(Ok(c)) => Ok(c),
-            _ => Err(())
+            Ok(Err(_)) => Err(()),
+            _ => {
+                std::thread::sleep(rand::thread_rng().gen_range(std::time::Duration::from_millis(5)..std::time::Duration::from_millis(50)));
+                Err(())
+            }
         }
     }
 }

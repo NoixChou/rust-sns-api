@@ -47,7 +47,7 @@ pub async fn register(new_credential: Option<web::Json<InputUserCredential>>, db
     match result {
         Ok(Some(_)) => HttpResponse::Created().finish(),
         Err(e) => e,
-        _ => HttpResponse::InternalServerError().finish()
+        _ => HttpResponse::InternalServerError().finish(),
     }
 }
 

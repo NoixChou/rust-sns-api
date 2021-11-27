@@ -1,4 +1,5 @@
 use diesel::prelude::*;
+use log::error;
 use serde::Serialize;
 use validator::{Validate, ValidationErrors};
 
@@ -89,20 +90,14 @@ impl Post {
     
     pub fn insert(post: InputPost, author_user: &User, db: &DBConPool) -> Result<Option<String>, ValidationErrors> {
         use crate::schema::posts::dsl;
-        
+    
         let insertable_post = InsertablePost::new(post, author_user)?;
-        
+    
         let modified_rows_count = diesel::insert_into(dsl::posts)
             .values(&insertable_post)
             .execute(&crate::get_db_connection(db));
-        
-        match modified_rows_count {
-            Ok(count) => {
-                if count < 1 { return Ok(None); }
-                Ok(Some(insertable_post.id))
-            }
-            _ => Ok(None)
-        }
+    
+        response_item_insertion_result!(modified_rows_count, insertable_post.id)
     }
     
     pub fn fetch_by_id(post_id: &String, db: &DBConPool) -> QueryResult<Post> {

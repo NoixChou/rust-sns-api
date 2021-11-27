@@ -27,7 +27,6 @@ fn get_db_connection(pool: &DBConPool) -> PooledConnection<ConnectionManager<DBC
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    std::env::set_var("RUST_LOG", "debug");
     dotenv().ok();
     env_logger::init();
     
@@ -41,6 +40,7 @@ async fn main() -> std::io::Result<()> {
             )
             .data(
                 r2d2::Pool::builder()
+                    .connection_timeout(std::time::Duration::from_secs(10))
                     .build(r2d2::ConnectionManager::<diesel::MysqlConnection>::new(database_url))
                     .expect("Failed to establish DB connection")
             )
