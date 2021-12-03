@@ -54,7 +54,7 @@ pub async fn register(new_credential: Option<web::Json<InputUserCredential>>, db
 pub async fn show_me(authorized_user: web::ReqData<AuthorizedUser>) -> impl Responder {
     HttpResponse::Ok().json(
         hashmap! {
-            "credential" => authorized_user.credential.clone()
+            "credential" => &authorized_user.credential
         }
     )
 }
