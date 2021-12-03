@@ -1,5 +1,4 @@
 use actix_web::{HttpResponse, Responder, web};
-use actix_web::web::Data;
 use maplit::hashmap;
 
 use crate::controllers::{invalid_uuid_response, parse_error_response};
@@ -8,6 +7,12 @@ use crate::models::error::{ApiError, ApiErrorCode};
 use crate::models::post::{InputPost, Post};
 use crate::models::user::User;
 use crate::services::token_authentication::AuthorizedUser;
+
+#[derive(Deserialize)]
+pub struct PostIdPagination {
+    latest_post_id: Option<uuid::Uuid>,
+    oldest_post_id: Option<uuid::Uuid>,
+}
 
 pub async fn index() -> impl Responder {
     "index"
@@ -69,7 +74,7 @@ pub async fn delete() -> impl Responder {
     "delete"
 }
 
-pub async fn users_index(user_id: Option<web::Path<uuid::Uuid>>, db: web::Data<DBConPool>) -> impl Responder {
+pub async fn users_index(user_id: Option<web::Path<uuid::Uuid>>, pagination: web::Query<PostIdPagination>, db: web::Data<DBConPool>) -> impl Responder {
     let user_id = match user_id {
         None => return invalid_uuid_response(),
         Some(u) => u
@@ -80,20 +85,27 @@ pub async fn users_index(user_id: Option<web::Path<uuid::Uuid>>, db: web::Data<D
         Err(_) => return ApiError::new(ApiErrorCode::NotFound, "User not found").error_response()
     };
     
-    response_fetch_posts_by_user(&db, &user)
+    response_fetch_posts_by_user(&db, &user, pagination)
 }
 
-pub async fn my_index(authorized_user: web::ReqData<AuthorizedUser>, db: web::Data<DBConPool>) -> impl Responder {
+pub async fn my_index(authorized_user: web::ReqData<AuthorizedUser>, pagination: web::Query<PostIdPagination>, db: web::Data<DBConPool>) -> impl Responder {
     let user = match &authorized_user.user {
         Some(u) => u,
         None => return ApiError::new(ApiErrorCode::NotFound, "Create user first.").error_response()
     };
     
-    response_fetch_posts_by_user(&db, &user)
+    response_fetch_posts_by_user(&db, &user, pagination)
 }
 
-fn response_fetch_posts_by_user(db: &Data<DBConPool>, user: &User) -> HttpResponse {
-    match Post::fetch_list_by_author(user, &db) {
+fn response_fetch_posts_by_user(db: &web::Data<DBConPool>, user: &User, pagination: web::Query<PostIdPagination>) -> HttpResponse {
+    let fetch_post_fn = |id: uuid::Uuid| {
+        Post::fetch_by_id(&id.to_string(), db).ok()
+    };
+    
+    let latest_post = pagination.latest_post_id.and_then(fetch_post_fn);
+    let oldest_post = pagination.oldest_post_id.and_then(fetch_post_fn);
+    
+    match Post::fetch_list_by_author(user, &latest_post, &oldest_post, &db) {
         Ok(posts) => {
             HttpResponse::Ok().json(
                 posts.wrap_tagged()

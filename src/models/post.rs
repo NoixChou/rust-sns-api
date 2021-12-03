@@ -8,6 +8,8 @@ use crate::models::get_now_naive_date_time;
 use crate::models::user::{FilteredUser, User};
 use crate::schema::posts;
 
+const POST_LIST_LIMIT_COUNT: i64 = 10;
+
 #[derive(Deserialize, Validate)]
 pub struct InputPost {
     #[validate(length(min = 1, max = 1000))]
@@ -120,13 +122,25 @@ impl Post {
             .load::<Post>(&crate::get_db_connection(db))
     }
     
-    pub fn fetch_list_by_author(author: &User, db: &DBConPool) -> QueryResult<Posts> {
+    pub fn fetch_list_by_author(author: &User, latest_fetched_post: &Option<Post>, oldest_fetched_post: &Option<Post>, db: &DBConPool) -> QueryResult<Posts> {
         use crate::schema::posts::dsl;
         
-        Post::belonging_to(author)
+        let mut query = Post::belonging_to(author)
+            .into_boxed()
             .filter(dsl::deleted_at.is_null())
-            .filter(dsl::published_at.is_not_null().and(dsl::published_at.lt(get_now_naive_date_time())))
+            .filter(dsl::published_at.is_not_null().and(dsl::published_at.lt(get_now_naive_date_time())));
+        
+        if let Some(p) = latest_fetched_post {
+            query = query.filter(dsl::published_at.gt(p.published_at));
+        }
+        
+        if let Some(p) = oldest_fetched_post {
+            query = query.filter(dsl::published_at.lt(p.published_at));
+        }
+        
+        query
             .order(dsl::published_at.desc())
+            .limit(POST_LIST_LIMIT_COUNT)
             .load::<Post>(&crate::get_db_connection(db))
             .map(|posts: Vec<Post>| {
                 Posts::new(
