@@ -9,4 +9,4 @@ CREATE TABLE posts
     deleted_at   TIMESTAMP     NULL DEFAULT NULL
 );
 
-CREATE INDEX author_id_index ON posts(author_id)
+CREATE INDEX author_id_index ON posts (author_id)

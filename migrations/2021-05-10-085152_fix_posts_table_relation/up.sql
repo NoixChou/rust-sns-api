@@ -1,1 +1,1 @@
-ALTER TABLE posts ADD FOREIGN KEY author_id_foreign(author_id) REFERENCES users(id);
+ALTER TABLE posts ADD FOREIGN KEY author_id_foreign (author_id) REFERENCES users (id);
