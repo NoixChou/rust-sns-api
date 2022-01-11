@@ -1,4 +1,4 @@
-FROM rust:1.52.0-slim-buster
+FROM rust:1.57.0-slim-buster
 
 WORKDIR /api
 
