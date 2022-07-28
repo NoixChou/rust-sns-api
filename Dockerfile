@@ -1,12 +1,11 @@
-FROM rust:1.57.0-slim-buster
+FROM rust:1.62-buster
 
 WORKDIR /api
 
 RUN apt-get -y update \
 && apt-get install -y \
      libpq-dev \
-     default-libmysqlclient-dev \
-&& cargo install diesel_cli --no-default-features --features mysql \
+&& cargo install diesel_cli --no-default-features --features postgres \
 && cargo install cargo-watch
 
 COPY ./src /api/src

@@ -18,7 +18,7 @@ mod models;
 mod routes;
 mod services;
 
-pub type DBConnection = diesel::MysqlConnection;
+pub type DBConnection = diesel::PgConnection;
 pub type DBConPool = r2d2::Pool<r2d2::ConnectionManager<DBConnection>>;
 
 fn get_db_connection(pool: &DBConPool) -> PooledConnection<ConnectionManager<DBConnection>> {
@@ -41,7 +41,7 @@ async fn main() -> std::io::Result<()> {
             .data(
                 r2d2::Pool::builder()
                     .connection_timeout(std::time::Duration::from_secs(10))
-                    .build(r2d2::ConnectionManager::<diesel::MysqlConnection>::new(database_url))
+                    .build(r2d2::ConnectionManager::<DBConnection>::new(database_url))
                     .expect("Failed to establish DB connection")
             )
             .service(web::scope("/api")
